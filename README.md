@@ -5,3 +5,4 @@
   "username": "root",
   "password": "password"
 }后重启应用，方可正常使用。
+如果你不能正常连接，退出重进是个好办法。
