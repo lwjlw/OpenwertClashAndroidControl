@@ -44,11 +44,5 @@
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
         </service>
-
-        <service
-            android:name=".SshCommandService"
-            android:foregroundServiceType="dataSync"
-            android:exported="false" />
-
     </application>
 </manifest>

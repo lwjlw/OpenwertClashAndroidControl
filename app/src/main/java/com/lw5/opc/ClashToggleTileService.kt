@@ -5,6 +5,7 @@ import android.graphics.drawable.Icon
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import android.util.Log
+import android.widget.Toast // 导入 Toast 类
 import com.jcraft.jsch.JSch
 import com.jcraft.jsch.Session
 import kotlinx.coroutines.*
@@ -58,6 +59,7 @@ class ClashToggleTileService : TileService() {
         } ?: run {
             log("SSH 配置未加载，无法检查 Clash 状态。请检查 config.json 文件。")
             updateTileUI(Tile.STATE_UNAVAILABLE, "配置错误", R.drawable.ic_clash_unknown) // 使用 unknown 图标
+            showToast("配置错误：无法读取SSH配置") // 添加Toast
         }
     }
 
@@ -66,6 +68,7 @@ class ClashToggleTileService : TileService() {
         log("瓷块被点击。")
         // 立即将磁贴UI更新为执行中状态，提供即时反馈
         updateTileUI(Tile.STATE_UNAVAILABLE, "执行中...", R.drawable.ic_clash_unknown) // 切换中也使用 unknown 图标
+        showToast("正在执行命令...") // 添加Toast
 
         // 确保配置已加载后再执行 Clash 状态切换
         sshConfig?.let {
@@ -75,6 +78,7 @@ class ClashToggleTileService : TileService() {
         } ?: run {
             log("SSH 配置未加载，无法切换 Clash 状态。请检查 config.json 文件。")
             updateTileUI(Tile.STATE_UNAVAILABLE, "配置错误", R.drawable.ic_clash_unknown) // 使用 unknown 图标
+            showToast("配置错误：无法执行切换操作") // 添加Toast
         }
     }
 
@@ -96,13 +100,16 @@ class ClashToggleTileService : TileService() {
      * @param iconResId 磁贴图标的资源ID
      */
     private fun updateTileUI(state: Int, label: String, iconResId: Int) {
-        qsTile?.apply {
-            this.state = state
-            this.label = label
-            this.icon = Icon.createWithResource(this@ClashToggleTileService, iconResId)
-            updateTile()
-            log("瓷块UI已更新: $label ($state) with icon $iconResId") // 添加日志以确认 UI 更新情况
-        } ?: log("qsTile 为空，无法更新 UI。")
+        // UI 更新必须在主线程进行
+        GlobalScope.launch(Dispatchers.Main) { // 使用GlobalScope和Dispatchers.Main来确保在主线程执行
+            qsTile?.apply {
+                this.state = state
+                this.label = label
+                this.icon = Icon.createWithResource(this@ClashToggleTileService, iconResId)
+                updateTile()
+                log("瓷块UI已更新: $label ($state) with icon $iconResId")
+            } ?: log("qsTile 为空，无法更新 UI。")
+        }
     }
 
     // 重载 updateTileUI，方便在只有状态和标签时调用，使用默认图标逻辑
@@ -115,6 +122,17 @@ class ClashToggleTileService : TileService() {
         updateTileUI(state, label, iconResId)
     }
 
+    /**
+     * 显示 Toast 通知。
+     * @param message 要显示的消息
+     */
+    private fun showToast(message: String) {
+        // Toast 必须在主线程显示
+        GlobalScope.launch(Dispatchers.Main) {
+            Toast.makeText(this@ClashToggleTileService, message, Toast.LENGTH_SHORT).show()
+            log("显示Toast: $message")
+        }
+    }
 
     /**
      * 从指定路径读取 config.json 文件并解析 SSH 配置。
@@ -125,7 +143,8 @@ class ClashToggleTileService : TileService() {
 
         if (!configFilePath.exists()) {
             log("配置文件不存在: ${configFilePath.absolutePath}")
-            updateTileUI(Tile.STATE_UNAVAILABLE, "无配置", R.drawable.ic_clash_unknown) // 使用 unknown 图标
+            updateTileUI(Tile.STATE_UNAVAILABLE, "无配置", R.drawable.ic_clash_unknown)
+            showToast("配置文件 config.json 不存在") // 添加Toast
             return
         }
 
@@ -142,10 +161,12 @@ class ClashToggleTileService : TileService() {
 
             sshConfig = SshConfig(host, username, password)
             log("SSH 配置加载成功。Host: ${sshConfig?.host}, User: ${sshConfig?.username}")
+            // 成功加载配置后不立即显示Toast，因为用户可能没有点击磁贴
         } catch (e: Exception) {
             Log.e(TAG, "加载或解析 SSH 配置文件失败: ${e.message}", e)
             sshConfig = null // 加载失败，清空配置
-            updateTileUI(Tile.STATE_UNAVAILABLE, "配置错误", R.drawable.ic_clash_unknown) // 使用 unknown 图标
+            updateTileUI(Tile.STATE_UNAVAILABLE, "配置错误", R.drawable.ic_clash_unknown)
+            showToast("加载配置失败: ${e.localizedMessage}") // 添加Toast
         }
     }
 
@@ -156,7 +177,8 @@ class ClashToggleTileService : TileService() {
         val currentSshConfig = sshConfig // 获取当前配置
         if (currentSshConfig == null) {
             log("SSH 配置为空，无法执行 Clash 操作。")
-            updateTileUI(Tile.STATE_UNAVAILABLE, "配置丢失", R.drawable.ic_clash_unknown) // 使用 unknown 图标
+            updateTileUI(Tile.STATE_UNAVAILABLE, "配置丢失", R.drawable.ic_clash_unknown)
+            showToast("SSH配置丢失，请检查文件") // 添加Toast
             return
         }
 
@@ -171,6 +193,7 @@ class ClashToggleTileService : TileService() {
             log("尝试连接 SSH (host: ${currentSshConfig.host}, user: ${currentSshConfig.username}, port: $SSH_PORT)")
             session.connect()
             log("SSH 连接成功。")
+            // 连接成功后可以考虑发一个Toast，但通常不发，保持简洁
 
             // 检查 Clash 当前状态
             val checkCommand = "uci -q get openclash.config.enable"
@@ -213,6 +236,7 @@ class ClashToggleTileService : TileService() {
                 val newLabel = if (newIsClashRunning) "Clash 运行中" else "Clash 未启动"
                 updateTileUI(newStatus, newLabel)
                 log("Clash 状态已切换并更新 UI: $newLabel ($newStatus)")
+                showToast("Clash 已切换为: $newLabel") // 添加Toast，告知切换结果
 
             } else {
                 // 仅检查状态，不切换
@@ -220,11 +244,13 @@ class ClashToggleTileService : TileService() {
                 val label = if (isClashRunning) "Clash 运行中" else "Clash 未启动"
                 updateTileUI(status, label)
                 log("Clash 状态已更新 UI (仅检查): $label ($status)")
+                // 仅检查时通常不需要Toast，避免打扰用户
             }
 
         } catch (e: Exception) {
             Log.e(TAG, "SSH 操作失败: ${e.message}", e)
-            updateTileUI(Tile.STATE_UNAVAILABLE, "SSH 错误", R.drawable.ic_clash_unknown) // 使用 unknown 图标
+            updateTileUI(Tile.STATE_UNAVAILABLE, "SSH 错误", R.drawable.ic_clash_unknown)
+            showToast("SSH操作失败: ${e.localizedMessage}") // 添加Toast，告知错误信息
         } finally {
             session?.disconnect()
             log("SSH 连接已断开。")
