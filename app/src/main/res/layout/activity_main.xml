@@ -5,11 +5,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    tools:context=".MainActivity">
+    android:background="?attr/android:windowBackground"  tools:context=".MainActivity">
 
     <TextView
-        android:id="@+id/statusText"
-        android:layout_width="wrap_content"
+        android:id="@+id/statusText"  android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Clash 状态未知 (持续监测)"
         android:textSize="20sp"
@@ -18,54 +17,46 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="16dp"
-        android:padding="4dp" />
-
-    <TextView
-        android:id="@+id/lastRefreshTimeText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="上次刷新: N/A"
-        android:textSize="14sp"
-        android:textColor="@android:color/darker_gray"
-        android:layout_marginTop="4dp"
-        app:layout_constraintTop_toBottomOf="@+id/statusText"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:padding="2dp" />
+        android:padding="4dp"
+        android:textColor="?attr/android:textColorPrimary" /> <TextView
+    android:id="@+id/lastRefreshTimeText"  android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="上次刷新: N/A"
+    android:textSize="14sp"
+    android:textColor="?attr/android:textColorSecondary" android:layout_marginTop="4dp"
+    app:layout_constraintTop_toBottomOf="@+id/statusText"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent" />
 
     <Button
-        android:id="@+id/btnToggleClash"
-        android:layout_width="0dp"
+        android:id="@+id/btnToggleClash"  android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="切换 Clash 开关"
+        android:text="执行Clash切换命令"
         app:layout_constraintTop_toBottomOf="@+id/lastRefreshTimeText"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="16dp" />
 
     <Button
-        android:id="@+id/btnSpeedTestUdp"
-        android:layout_width="0dp"
+        android:id="@+id/btnSpeedTestUdp"  android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="测速 (UDP)"
+        android:text="速度测试 (UDP)"
         app:layout_constraintTop_toBottomOf="@+id/btnToggleClash"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="8dp" />
 
     <Button
-        android:id="@+id/btnSpeedTestTcp"
-        android:layout_width="0dp"
+        android:id="@+id/btnSpeedTestTcp"  android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="测速 (TCP)"
+        android:text="速度测试 (TCP)"
         app:layout_constraintTop_toBottomOf="@+id/btnSpeedTestUdp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="8dp" />
 
     <Button
-        android:id="@+id/btnExit"
-        android:layout_width="0dp"
+        android:id="@+id/btnExit"  android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="退出并清理缓存"
         app:layout_constraintTop_toBottomOf="@+id/btnSpeedTestTcp"
@@ -74,25 +65,22 @@
         android:layout_marginTop="8dp" />
 
     <ScrollView
-        android:id="@+id/logScrollView"
-        android:layout_width="0dp"
+        android:id="@+id/logScrollView"  android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@+id/btnExit"
+        android:background="?attr/colorSurface"  app:layout_constraintTop_toBottomOf="@+id/btnExit"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
         <TextView
-            android:id="@+id/logTextView"
-            android:layout_width="match_parent"
+            android:id="@+id/logTextView"  android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:fontFamily="monospace"
             android:text="日志输出:\n"
             android:textSize="12sp"
             android:padding="4dp"
-            android:background="#f0f0f0"
-            android:textColor="@android:color/black"
-            android:textIsSelectable="true" /> </ScrollView>
+            android:scrollbars="vertical"
+            android:textColor="?attr/android:textColorPrimary" /> </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

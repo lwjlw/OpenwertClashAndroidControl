@@ -21,4 +21,7 @@
     <color name="iperf_server_start_color">#FF8BC34A</color>
     <color name="iperf_server_stop_color">#FF1976D2</color>
     <color name="speed_test_result_color">#FF673AB7</color>
+    <color name="dark_background">#FF121212</color>
+    <color name="dark_surface">#FF212121</color>
+    <color name="grey_300">#FFE0E0E0</color>
 </resources>
