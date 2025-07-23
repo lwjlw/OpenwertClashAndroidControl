@@ -33,6 +33,8 @@ import java.io.FileWriter // 导入 FileWriter 类
 import java.io.IOException // 导入 IOException 类
 import kotlinx.coroutines.*
 import androidx.lifecycle.lifecycleScope // 导入 lifecycleScope
+import androidx.activity.result.contract.ActivityResultContracts // 导入 ActivityResultContracts
+import android.os.Build // 导入 Build
 
 class MainActivity : AppCompatActivity() {
 
@@ -53,7 +55,6 @@ class MainActivity : AppCompatActivity() {
     private var originalErr: PrintStream? = null
 
     private var sshSession: Session? = null
-    // private var statusCheckTimer: Timer? = null // 移除 Timer 变量
     private var clashStatusJob: Job? = null // 新增：用于管理定时任务的协程Job
 
     private val CLASH_STATUS_CHECK_INTERVAL: Long = 5000 // 5秒检查一次
@@ -65,6 +66,19 @@ class MainActivity : AppCompatActivity() {
     private lateinit var networkCallback: ConnectivityManager.NetworkCallback
     // 新增权限请求码
     private val REQUEST_STORAGE_PERMISSION = 100
+
+    // **新增：通知权限请求启动器**
+    private val requestNotificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission() // **已修正這裡**
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            toast("通知权限已授予。")
+            logImportant("通知权限已授予。", android.R.color.holo_green_light)
+        } else {
+            toast("通知权限被拒绝，部分功能可能受限。")
+            logImportant("通知权限被拒绝，前台服务通知可能无法显示。", android.R.color.holo_orange_light)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,12 +98,29 @@ class MainActivity : AppCompatActivity() {
         logScrollView = findViewById(R.id.logScrollView)
         redirectOutputToLogView()
         log("应用已启动。正在加载配置...")
-        // 在加载配置前请求权限
-        checkAndRequestPermissions()
+
+        // **新增：检查并请求 POST_NOTIFICATIONS 权限**
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // TIRAMISU 是 Android 13 的 API 级别
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                logImportant("正在请求通知权限...", android.R.color.holo_orange_light)
+                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                logImportant("通知权限已存在。", android.R.color.holo_green_light)
+            }
+        }
+
+        // 在加载配置前请求存储权限
+        checkAndRequestPermissions() // 这会处理 READ/WRITE_EXTERNAL_STORAGE
+
         // 初始状态，等待网络连接
         updateStatusText("Clash 状态未知 (等待网络)", android.R.color.darker_gray, "N/A")
         setButtonsEnabled(false)
         log("等待网络连接状态更新以建立 SSH 连接和启动监测。")
+
         btnToggleClash.setOnClickListener {
             log("点击：切换 Clash 开关")
             toggleClash()
@@ -266,9 +297,7 @@ class MainActivity : AppCompatActivity() {
     private fun disconnectSshAndStopMonitoring(reason: String) {
         sshSession?.disconnect()
         sshSession = null
-        // statusCheckTimer?.cancel() // 移除 Timer 取消
         clashStatusJob?.cancel() // 替换为协程 Job 取消
-        // statusCheckTimer = null // 移除 Timer 设为空
         clashStatusJob = null // 替换为协程 Job 设为空
         log("SSH 会话已断开 ($reason)，状态检查已暂停。")
         runOnUiThread {
@@ -278,6 +307,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
     private fun checkAndRequestPermissions() {
+        // 先检查存储权限
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
             ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             logImportant("未获取存储权限，正在请求...", android.R.color.holo_orange_light)
@@ -564,7 +594,7 @@ class MainActivity : AppCompatActivity() {
             val result = execSSHCommand(command)
 
             runOnUiThread {
-                if (!result.contains("执行失败") && !result.contains("命令错误") && !result.contains("not found") && !result.contains("No such file or directory")) {
+                if (!result.contains("执行失败") && !result.contains("命令错误") && !result.contains("not found") && !result.contains("no such file or directory")) {
                     logImportant("Clash 切换命令已成功发送。等待后台状态检查更新UI...", R.color.clash_command_sent_color)
                     toast("Clash 切换命令已发送。")
                 } else {

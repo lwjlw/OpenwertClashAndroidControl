@@ -13,7 +13,7 @@ android {
         minSdk = 29
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -67,5 +67,5 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3") // 核心协程库
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3") // Android 特定调度器
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0") // 用于 lifecycleScope
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
 }
